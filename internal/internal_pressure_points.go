@@ -44,6 +44,8 @@ func (p *pressurePointMgrImpl) Execute(pressurePointName string) error {
 		// If probability is configured.
 		if value, ok2 := config[pressurePointConfigProbability]; ok2 {
 			if probability, err := strconv.Atoi(value); err == nil {
+				// Note: math/rand is intentionally used here (not crypto/rand) for test
+				// framework probability, not security-sensitive random number generation
 				if rand.Int31n(100) < int32(probability) {
 					// Drop the task.
 					p.logger.Debug("pressurePointMgrImpl.Execute drop task.",

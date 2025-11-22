@@ -67,6 +67,12 @@ type ClientConfigTLS struct {
 	// SNI override.
 	ServerName string
 	// True if host verification should be skipped.
+	//
+	// SECURITY WARNING: Setting this to true disables TLS hostname verification,
+	// making connections vulnerable to man-in-the-middle (MITM) attacks.
+	// This should NEVER be used in production environments.
+	// Only use this for testing/development with self-signed certificates.
+	// For production with custom CAs, use ServerCACertPath or ServerCACertData instead.
 	DisableHostVerification bool
 }
 
@@ -178,6 +184,8 @@ func (c *ClientConfigTLS) toTLSConfig() (*tls.Config, error) {
 	}
 
 	conf.ServerName = c.ServerName
+	// SECURITY: InsecureSkipVerify disables hostname verification and should only be used
+	// in development/testing environments with self-signed certificates
 	conf.InsecureSkipVerify = c.DisableHostVerification
 	return conf, nil
 }

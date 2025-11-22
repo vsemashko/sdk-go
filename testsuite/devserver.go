@@ -177,7 +177,19 @@ func downloadIfNeeded(ctx context.Context, options *DevServerOptions, logger log
 		return exePath, nil
 	}
 
-	client := &http.Client{}
+	// HTTP client with timeout for downloading CLI
+	client := &http.Client{
+		Timeout: 5 * time.Minute, // Large timeout for downloading binary
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 30 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+		},
+	}
 
 	// Build info URL
 	platform := runtime.GOOS

@@ -45,6 +45,8 @@ func (e *eagerWorkflowDispatcher) applyToRequest(request *workflowservice.StartW
 		randWorkers = append(randWorkers, worker)
 	}
 	e.lock.RUnlock()
+	// Note: math/rand is intentionally used here (not crypto/rand) for load balancing
+	// worker selection, not security-sensitive random number generation
 	rand.Shuffle(len(randWorkers), func(i, j int) { randWorkers[i], randWorkers[j] = randWorkers[j], randWorkers[i] })
 	for _, worker := range randWorkers {
 		maybePermit := worker.tryReserveSlot()

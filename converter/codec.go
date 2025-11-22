@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	commonpb "go.temporal.io/api/common/v1"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -336,8 +338,30 @@ type remotePayloadCodec struct {
 	options RemotePayloadCodecOptions
 }
 
+// defaultHTTPClient returns an HTTP client with secure timeout settings.
+func defaultHTTPClient() http.Client {
+	return http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   10 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConnsPerHost:   10,
+		},
+	}
+}
+
 // NewRemotePayloadCodec creates a PayloadCodec using the remote endpoint configured by RemotePayloadCodecOptions.
+// If Client is not provided in options, a default client with appropriate timeouts will be used.
 func NewRemotePayloadCodec(options RemotePayloadCodecOptions) PayloadCodec {
+	// Use default client with timeouts if none provided
+	if options.Client.Timeout == 0 && options.Client.Transport == nil {
+		options.Client = defaultHTTPClient()
+	}
 	return &remotePayloadCodec{options}
 }
 

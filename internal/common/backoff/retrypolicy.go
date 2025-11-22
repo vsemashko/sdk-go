@@ -144,6 +144,8 @@ func (p *ExponentialRetryPolicy) ComputeNextDelay(elapsedTime time.Duration, att
 	if jitterPortion < 1 {
 		jitterPortion = 1
 	}
+	// Note: math/rand is intentionally used here (not crypto/rand) as this is for
+	// backoff jitter, not security-sensitive random number generation
 	nextInterval = nextInterval*(1-retry.DefaultJitter) + float64(rand.Intn(jitterPortion))
 
 	return time.Duration(nextInterval)

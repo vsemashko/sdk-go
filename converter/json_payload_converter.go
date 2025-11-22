@@ -7,6 +7,13 @@ import (
 	commonpb "go.temporal.io/api/common/v1"
 )
 
+const (
+	// maxJSONPayloadSize is the maximum size for a JSON payload during deserialization
+	// to prevent memory exhaustion attacks. This is set to 10MB as a reasonable default
+	// while the gRPC max payload size is 128MB.
+	maxJSONPayloadSize = 10 * 1024 * 1024 // 10MB
+)
+
 // JSONPayloadConverter converts to/from JSON.
 type JSONPayloadConverter struct {
 }
@@ -27,7 +34,13 @@ func (c *JSONPayloadConverter) ToPayload(value interface{}) (*commonpb.Payload, 
 
 // FromPayload converts a single payload to a value.
 func (c *JSONPayloadConverter) FromPayload(payload *commonpb.Payload, valuePtr interface{}) error {
-	err := json.Unmarshal(payload.GetData(), valuePtr)
+	data := payload.GetData()
+	// Security: Check payload size to prevent memory exhaustion
+	if len(data) > maxJSONPayloadSize {
+		return fmt.Errorf("%w: payload size %d exceeds maximum allowed size %d",
+			ErrUnableToDecode, len(data), maxJSONPayloadSize)
+	}
+	err := json.Unmarshal(data, valuePtr)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrUnableToDecode, err)
 	}
